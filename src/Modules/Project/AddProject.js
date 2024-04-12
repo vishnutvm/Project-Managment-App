@@ -50,7 +50,7 @@ const updateTreeData = (list, key, children) =>
 const AddProject = () => {
   const userDetails = useSelector((state) => state.user.loginUserDetails);
   const projectDetails = useSelector((state) => state.project.projectDetails);
-  console.log("fffff", projectDetails);
+  console.log("projectdetails", projectDetails);
   const projectId = projectDetails[projectDetails.length - 1]._id;
   // const milestoneId =
   //   projectDetails[projectDetails.length - 1].milestones[
