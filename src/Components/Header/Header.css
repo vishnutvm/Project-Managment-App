@@ -1,0 +1,21 @@
+.header{
+    display: flex;
+}
+.top_box{
+    width: 20px;
+    height: 12px;
+    background: #ffff;
+}
+.profile{
+    display: flex;
+}
+.search_bar{
+    border-radius: 20px;
+    width: 145px;
+    height: 29px;
+}
+.bell_icon{
+    /* width: 24px;
+    height: 24px; */
+font-size: 56px;
+}

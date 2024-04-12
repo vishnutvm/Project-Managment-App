@@ -1,0 +1,96 @@
+.login_container{
+    width: 100%;
+    height: 100vh;
+    background-color:#FFFFFF
+    
+}
+.login_topbar{
+    width: 100%;
+height: 40px;
+flex-shrink: 0;
+background-color:  var(--Tertiary, #FFFFFF);;
+}
+.formm{
+    margin-top: 12px;
+}
+.log_card {
+    width: 620px;
+    margin: auto;
+    margin-top: -47px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.welcome{
+    /* margin-bottom: 300px; */
+    color: var(--Secondary, #2B2B2B);
+font-family: "Segoe UI";
+font-size: 24px;
+font-style: normal;
+font-weight: 700;
+line-height: 36px; /* 150% */
+margin-top: 50px;
+
+}
+.email_text{
+    color: var(--Tertiary, #5E5E5E);
+font-family: "Segoe UI";
+font-size: 12px;
+font-style: normal;
+font-weight: 700;
+line-height: normal;
+}
+.button3{
+    width: 120px;
+    height: 46px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: #f9f9f9;
+    padding-left: 12px;
+    margin-left: 322px;
+    justify-content: end;
+    align-items: center;
+    box-shadow: 10px 10px 20px 0px rgba(0, 0, 0, 0.09), -10px -10px 20px 0px #fff;
+
+}
+.input_container{
+    width: 470px;
+    height: 50px;
+    flex-shrink: 0;
+    background-color: #EEE;
+}
+.loginpage{
+    font-size: larger;
+    /* margin-left: 90px; */
+    justify-items: center;
+    align-items: center;
+    
+}
+.submit_button{
+    width: 470px;
+    height: 55px;
+    margin-left: -80px;
+    /* margin-right: 25px; */
+    flex-shrink: 0;
+    /* align-items: center; */
+    /* justify-content: center; */
+    background-color:#39C261;
+}
+.empire{
+    color: var(--Primary, #39C261);
+font-family: "Segoe UI";
+font-size: 20px;
+font-style: normal;
+font-weight: 400;
+line-height: 40px; /* 200% */
+
+}
+.submit_text{
+    color: var(--Primary, #FFFFFF);
+text-align: center;
+font-family: "Segoe UI";
+font-size: 16px;
+font-style: normal;
+font-weight: 700;
+line-height: 24px; /* 150% */
+}
