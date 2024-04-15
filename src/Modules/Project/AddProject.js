@@ -11,6 +11,7 @@ import {
   DatePicker,
   message,
   Select,
+  Switch,
 } from 'antd';
 import axios from 'axios';
 import config from '../../Config/Config';
@@ -47,6 +48,51 @@ const AddProject = () => {
   const [Project, setProject] = useState({});
   const [milestone, setMilestone] = useState({});
   const [task, setTask] = useState({});
+  const [allProject, setAllProject] = useState([]);
+  const [allTasks, setAllTasks] = useState([]);
+  const [allMileStones, setMileStones] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedMileStone, setselectedMileStone] = useState(null);
+  const [isTask, setIsTask] = useState(true);
+  const extractAllProjectData = (data) => {
+    const allProjectsDetails = [];
+
+    const handleTask = (tasks) => {
+      const allTasks = [];
+      tasks.forEach((task) => {
+        allTasks.push({ name: task.name, _id: task._id });
+        if (task.tasks) {
+          handleTask(task.tasks); // Recursively handle nested tasks
+        }
+      });
+      return allTasks;
+    };
+
+    const handleMilestone = (milestones) => {
+      const allMilestones = [];
+      milestones.forEach((milestone) => {
+        const tasks = handleTask(milestone.tasks || []); // Handle tasks for this milestone
+        allMilestones.push({
+          name: milestone.name,
+          _id: milestone._id,
+          tasks: tasks,
+        });
+      });
+      return allMilestones;
+    };
+
+    data.forEach((project) => {
+      const milestones = handleMilestone(project.milestones || []); // Handle milestones for this project
+      allProjectsDetails.push({
+        _id: project._id,
+        name: project.name,
+        milestones: milestones,
+      });
+    });
+
+    return allProjectsDetails;
+  };
+
   const fetchProject = async () => {
     try {
       const response = await axios.post(
@@ -63,7 +109,12 @@ const AddProject = () => {
           Array.isArray(response?.data?.response) &&
           response?.data?.response.length > 0
         ) {
-          setTreeData(response?.data?.response || []);
+          const allProjectsData = response?.data?.response || [];
+          setTreeData(allProjectsData);
+
+          // Setting all Project ids
+          const allProjectsDetails = extractAllProjectData(allProjectsData);
+          setAllProject(allProjectsDetails);
         }
       }
     } catch (error) {
@@ -82,25 +133,25 @@ const AddProject = () => {
     try {
       const response = await axios.post(
         `${config.apiUrl}/createMilestone`,
-        { values, projectId, assignedBy },
+        { projectId: values.projectId, assignedBy, values: { ...values } },
         {
           headers: {
             Authorization: token,
           },
         }
       );
-      console.log('res', response);
       if (response.data.isSuccess) {
         setMilestone(response.data.response);
-        setShowMilestoneModal(false);
         message.success('milestone created');
-
-        form.resetFields('');
       } else {
         message.error(response.data.error);
       }
     } catch (error) {
       console.log('error');
+    } finally {
+      form.resetFields();
+      setShowMilestoneModal(false);
+      fetchProject();
     }
   };
   const onFinishTaskCreation = async (values) => {
@@ -108,24 +159,26 @@ const AddProject = () => {
     try {
       const response = await axios.post(
         `${config.apiUrl}/createTask`,
-        { projectId, values, assignedBy },
+        { values, assignedBy ,parentTaskId:values.parentTaskId, projectId: values.projectId,milestoneId:values.milestoneId},
         {
           headers: {
             Authorization: token,
           },
         }
       );
-      console.log('res', response);
       if (response.data.isSuccess) {
         setTask(response.data.response);
-        setShowTaskModal(false);
-        message.success('task added');
-        form.resetFields('');
+
+
       } else {
         message.error(response.data.error);
       }
     } catch (error) {
       console.log('error');
+    }finally{
+      form.resetFields();
+      fetchProject();
+      setShowTaskModal(false);
     }
   };
   const handleCreateTask = () => {
@@ -167,7 +220,7 @@ const AddProject = () => {
     } catch (error) {
       message.success('Something went wrong');
       console.log('error');
-    }finally{
+    } finally {
       fetchProject();
     }
   };
@@ -180,19 +233,24 @@ const AddProject = () => {
     setShowMilestoneModal(false);
     setShowTaskModal(false);
   };
-
+  const handleProjectSelect = (value) => {
+    setSelectedProject(value);
+  };
+  const handleMileStoneSelect = (value) => {
+    setselectedMileStone(value);
+  };
   return (
-    <div style={{ maxWidth: '1200px', margin: 'auto', padding: '20px' }}>
+    <div style={{ maxWidth: '1200px', margin: 'auto', padding: '40px 20px ' }}>
       {/* Buttons For Creating Project, MileStone, Task */}
       <Flex justify="center" gap={6} style={{ marginBottom: '20px' }}>
         <Button type="primary" onClick={handleCreateProject}>
           Create Project
         </Button>
         <Button type="primary" onClick={handleCreateMilestone}>
-          Add Milestone
+          Create Milestone
         </Button>
         <Button type="primary" onClick={handleCreateTask}>
-          Create Subtask
+          Create Task
         </Button>
       </Flex>
 
@@ -302,6 +360,13 @@ const AddProject = () => {
             onFinishFailed={onFinishFailed}
             autoComplete="off"
           >
+            <Form.Item label="Select Project" name="projectId">
+              <Select>
+                {allProject.map((project) => (
+                  <Option value={project._id}>{project.name}</Option>
+                ))}
+              </Select>
+            </Form.Item>
             <Form.Item label="Name" name="name">
               <Input />
             </Form.Item>
@@ -328,8 +393,8 @@ const AddProject = () => {
               }}
             >
               <Flex justify="space-between">
-                <Button type="primary" htmlType="submit">
-                  Save
+                <Button htmlType="submit" type="primary">
+                  Save MileStone
                 </Button>
               </Flex>
             </Form.Item>
@@ -365,6 +430,58 @@ const AddProject = () => {
             onFinishFailed={onFinishFailed}
             autoComplete="off"
           >
+            <Form.Item label="Task Type" name="isTask">
+              <Switch
+                checkedChildren="Task"
+                unCheckedChildren="Subtask"
+                checked={isTask}
+                onChange={(checked) => setIsTask(checked)}
+              />
+            </Form.Item>
+
+            <Form.Item label="Select Project" name="projectId">
+              <Select onChange={handleProjectSelect}>
+                {allProject.map((project) => (
+                  <Option key={project._id} value={project._id}>
+                    {project.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item label="Select Milestone" name="milestoneId">
+              <Select onChange={handleMileStoneSelect}>
+                {selectedProject &&
+                  allProject
+                    .find((project) => project._id === selectedProject)
+                    .milestones.map((milestone) => (
+                      <Option key={milestone._id} value={milestone._id}>
+                        {milestone.name}
+                      </Option>
+                    ))}
+              </Select>
+            </Form.Item>
+
+            {!isTask && selectedProject && selectedMileStone && (
+              <Form.Item
+                label="Select Task"
+                name="parentTaskId"
+                rules={[{ required: true, message: 'Please select a task!' }]}
+              >
+                <Select>
+                  {allProject
+                    ?.find((project) => project._id === selectedProject)
+                    ?.milestones.find(
+                      (milestone) => milestone._id === selectedMileStone
+                    )
+                    ?.tasks?.map((task) => (
+                      <Option key={task._id} value={task._id}>
+                        {task.name}
+                      </Option>
+                    ))}
+                </Select>
+              </Form.Item>
+            )}
             <Form.Item label="Name" name="name">
               <Input />
             </Form.Item>
@@ -391,8 +508,8 @@ const AddProject = () => {
               }}
             >
               <Flex justify="space-between">
-                <Button type="primary" htmlType="submit">
-                  Save
+                <Button htmlType="submit" type="primary">
+                  Save Task
                 </Button>
               </Flex>
             </Form.Item>
