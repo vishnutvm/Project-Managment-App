@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Tree,
   Modal,
@@ -11,26 +11,11 @@ import {
   DatePicker,
   message,
   Select,
-} from "antd";
-import Forms from "../../Components/CommonForm/TaskForms";
-import TaskForms from "../../Components/CommonForm/TaskForms";
-import axios from "axios";
-import config from "../../Config/Config";
-import MilestoneForm from "../../Components/CommonForm/MilestoneForm";
-import { useSelector } from "react-redux";
-import { getProjectDetails } from "../../Redux/ProjectReducer";
-import { useDispatch } from "react-redux";
-const editProject = (key) => {
-  console.log("Edit project: ", key);
-  // Add your edit logic here
-};
-
-const deleteProject = (key) => {
-  console.log("Delete project: ", key);
-  // Add your delete logic here
-};
-
-// It's just a simple demo. You can use tree map to optimize update perf.
+} from 'antd';
+import axios from 'axios';
+import config from '../../Config/Config';
+import { useSelector } from 'react-redux';
+import ProjectTree from '../../Components/Tree/Tree';
 const updateTreeData = (list, key, children) =>
   list.map((node) => {
     if (node.key === key) {
@@ -48,26 +33,17 @@ const updateTreeData = (list, key, children) =>
     return node;
   });
 const AddProject = () => {
+  const [treeData, setTreeData] = useState([]);
+  const [form] = Form.useForm();
   const userDetails = useSelector((state) => state.user.loginUserDetails);
-  const projectDetails = useSelector((state) => state.project.projectDetails);
-  console.log("projectdetails", projectDetails);
-  const projectId = projectDetails[projectDetails.length - 1]._id;
-  // const milestoneId =
-  //   projectDetails[projectDetails.length - 1].milestones[
-  //     projectDetails[projectDetails.length - 1].milestones.length - 1
-  //   ]._id;
-  // console.log("fkkfk", milestoneId);
-
+  const projectId = '';
   const token = userDetails.tokens[userDetails.tokens.length - 1];
   const memberList = userDetails.members;
   const assignedBy = userDetails._id;
-  const dispatch = useDispatch();
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [Project, setProject] = useState({});
-  const [allProjects, setAllProjects] = useState({});
   const [milestone, setMilestone] = useState({});
   const [task, setTask] = useState({});
   const fetchProject = async () => {
@@ -81,45 +57,22 @@ const AddProject = () => {
           },
         }
       );
-      console.log("rrrrr", response);
       if (response.data.isSuccess) {
-        dispatch(getProjectDetails(response?.data?.response));
-        const projects = response?.data.response.map((project, index) => ({
-          title: project.name,
-          key: project._id,
-          isLeaf: false,
-        }));
-        setTreeData(projects);
+        if (
+          Array.isArray(response?.data?.response) &&
+          response?.data?.response.length > 0
+        ) {
+          setTreeData(response?.data?.response || []);
+        }
       }
     } catch (error) {
-      alert(error.response.data.error);
-      console.error("Error fetching data:", error);
+      console.error('Error fetching data:', error);
     }
   };
 
   useEffect(() => {
     fetchProject();
-    // fetchData();
   }, []);
-  // console.log("dfwfn",treeData);
-
-  const fetchData = async () => {
-    try {
-      const response = await axios.post(
-        `${config.apiUrl}/getProject`,
-        {},
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      );
-      console.log("responsegetpr", response);
-    } catch (error) {
-      alert(error.response.data.error);
-      console.error("Error fetching data:", error);
-    }
-  };
 
   const handleCreateProject = () => {
     setShowProjectModal(true);
@@ -135,22 +88,22 @@ const AddProject = () => {
           },
         }
       );
-      console.log("res", response);
+      console.log('res', response);
       if (response.data.isSuccess) {
         setMilestone(response.data.response);
         setShowMilestoneModal(false);
-        message.success("milestone created");
+        message.success('milestone created');
 
-        form.resetFields("");
+        form.resetFields('');
       } else {
         message.error(response.data.error);
       }
     } catch (error) {
-      console.log("error");
+      console.log('error');
     }
   };
   const onFinishTaskCreation = async (values) => {
-    console.log("values", values);
+    console.log('values', values);
     try {
       const response = await axios.post(
         `${config.apiUrl}/createTask`,
@@ -161,17 +114,17 @@ const AddProject = () => {
           },
         }
       );
-      console.log("res", response);
+      console.log('res', response);
       if (response.data.isSuccess) {
         setTask(response.data.response);
-        setShowTaskModal(false)
-        message.success('task added')
-        form.resetFields("");
+        setShowTaskModal(false);
+        message.success('task added');
+        form.resetFields('');
       } else {
         message.error(response.data.error);
       }
     } catch (error) {
-      console.log("error");
+      console.log('error');
     }
   };
   const handleCreateTask = () => {
@@ -193,7 +146,7 @@ const AddProject = () => {
     setShowTaskModal(false);
   };
   const onFinishCreateProject = async (values) => {
-    console.log("values", values);
+    console.log('values', values);
     try {
       const response = await axios.post(
         `${config.apiUrl}/createProject`,
@@ -204,16 +157,16 @@ const AddProject = () => {
           },
         }
       );
-      console.log("res", response);
+      console.log('res', response);
       if (response.data.isSuccess) {
-        message.success("project created");
+        message.success('project created');
         setProject(response.data.response);
         setShowProjectModal(false);
       } else {
         message.error(response.data.error);
       }
     } catch (error) {
-      console.log("error");
+      console.log('error');
     }
   };
   const { Option } = Select;
@@ -224,50 +177,6 @@ const AddProject = () => {
     setShowProjectModal(false);
     setShowMilestoneModal(false);
     setShowTaskModal(false);
-  };
-  const [treeData, setTreeData] = useState([]);
-  const [form] = Form.useForm();
-  const onLoadData = async ({ key, children }) => {
-    if (children) {
-      return;
-    }
-
-    const projectId = key;
-
-    try {
-      const response = await axios.post(
-        `${config.apiUrl}/getProjectList`,
-        { projectId },
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      );
-
-      if (response.data.isSuccess) {
-        const project = response.data.response.find(
-          (proj) => proj._id === projectId
-        );
-        const projectMilestones = project?.milestones;
-
-        if (projectMilestones && projectMilestones.length > 0) {
-          const milestones = projectMilestones.map((milestone) => ({
-            title: milestone.name,
-            key: `${projectId}-${milestone._id}`, // Unique key for each milestone
-            isLeaf: true,
-          }));
-
-          setTreeData((origin) => updateTreeData(origin, key, milestones));
-        } else {
-          console.log("Project ID:", project._id);
-          console.log("No milestones found for this project.");
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching milestones:", error);
-      message.error("Error fetching milestones");
-    }
   };
 
   return (
@@ -283,8 +192,13 @@ const AddProject = () => {
           Create Subtask
         </Button>
       </Flex>
+      {/* ****** */}
 
-      <Tree loadData={onLoadData} treeData={treeData} />
+      {/* <ProjectTree data={ProjectData} /> */}
+      <ProjectTree data={treeData} />
+
+      {/* **************************************************************************************** */}
+      {/* Modals For Create  */}
       <Modal
         title="Create Project"
         open={showProjectModal}
