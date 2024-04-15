@@ -16,6 +16,7 @@ import axios from 'axios';
 import config from '../../Config/Config';
 import { useSelector } from 'react-redux';
 import ProjectTree from '../../Components/Tree/Tree';
+import { ProjectData } from './dummyData';
 const updateTreeData = (list, key, children) =>
   list.map((node) => {
     if (node.key === key) {
@@ -146,7 +147,6 @@ const AddProject = () => {
     setShowTaskModal(false);
   };
   const onFinishCreateProject = async (values) => {
-    console.log('values', values);
     try {
       const response = await axios.post(
         `${config.apiUrl}/createProject`,
@@ -157,7 +157,6 @@ const AddProject = () => {
           },
         }
       );
-      console.log('res', response);
       if (response.data.isSuccess) {
         message.success('project created');
         setProject(response.data.response);
@@ -166,7 +165,10 @@ const AddProject = () => {
         message.error(response.data.error);
       }
     } catch (error) {
+      message.success('Something went wrong');
       console.log('error');
+    }finally{
+      fetchProject();
     }
   };
   const { Option } = Select;
@@ -180,8 +182,9 @@ const AddProject = () => {
   };
 
   return (
-    <>
-      <Flex gap={6}>
+    <div style={{ maxWidth: '1200px', margin: 'auto', padding: '20px' }}>
+      {/* Buttons For Creating Project, MileStone, Task */}
+      <Flex justify="center" gap={6} style={{ marginBottom: '20px' }}>
         <Button type="primary" onClick={handleCreateProject}>
           Create Project
         </Button>
@@ -192,13 +195,29 @@ const AddProject = () => {
           Create Subtask
         </Button>
       </Flex>
-      {/* ****** */}
 
-      {/* <ProjectTree data={ProjectData} /> */}
-      <ProjectTree data={treeData} />
+      <Flex gap={20}>
+        {/* Tree Structure Card */}
+        <Card
+          style={{
+            flex: '1 1 400px',
+            maxHeight: '600px',
+            overflow: 'auto',
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+            borderRadius: '8px',
+          }}
+        >
+          <h1 className=" text-center mb-9 font-semibold text-3xl">
+            {' '}
+            All Projects
+          </h1>
+          <ProjectTree data={treeData} />
+        </Card>
+      </Flex>
 
-      {/* **************************************************************************************** */}
-      {/* Modals For Create  */}
+      {/* Modals */}
+
+      {/* Create Project */}
       <Modal
         title="Create Project"
         open={showProjectModal}
@@ -206,8 +225,6 @@ const AddProject = () => {
         onCancel={handleCancel}
         footer={false}
       >
-        {/* Form for creating a new project */}
-        {/* <h1 className="mt-9 ml-7 font-semibold text-2xl">Create Project</h1> */}
         <Card>
           <Form
             className="mt-8 w-full"
@@ -256,6 +273,8 @@ const AddProject = () => {
           </Form>
         </Card>
       </Modal>
+
+      {/* Create  Milestone */}
       <Modal
         title="Create Milestone"
         open={showMilestoneModal}
@@ -283,29 +302,11 @@ const AddProject = () => {
             onFinishFailed={onFinishFailed}
             autoComplete="off"
           >
-            <Form.Item
-              label="Name"
-              name="name"
-              //   rules={[
-              //     {
-              //       required: true,
-              //       message: 'Please input your description!',
-              //     },
-              //   ]}
-            >
+            <Form.Item label="Name" name="name">
               <Input />
             </Form.Item>
 
-            <Form.Item
-              label="Description"
-              name="description"
-              //   rules={[
-              //     {
-              //       required: true,
-              //       message: 'Please input your description!',
-              //     },
-              //   ]}
-            >
+            <Form.Item label="Description" name="description">
               <Input />
             </Form.Item>
             <Form.Item label="Assign to" name="assignee">
@@ -316,16 +317,7 @@ const AddProject = () => {
               </Select>
             </Form.Item>
 
-            <Form.Item
-              label="Timeframe"
-              name="timeframe"
-              //   rules={[
-              //     {
-              //       required: true,
-              //       message: 'Please input!',
-              //     },
-              //   ]}
-            >
+            <Form.Item label="Timeframe" name="timeframe">
               <RangePicker />
             </Form.Item>
 
@@ -344,6 +336,8 @@ const AddProject = () => {
           </Form>
         </Card>
       </Modal>
+
+      {/* Create  Task */}
       <Modal
         title="Create Subtask"
         open={showTaskModal}
@@ -371,29 +365,11 @@ const AddProject = () => {
             onFinishFailed={onFinishFailed}
             autoComplete="off"
           >
-            <Form.Item
-              label="Name"
-              name="name"
-              //   rules={[
-              //     {
-              //       required: true,
-              //       message: 'Please input your description!',
-              //     },
-              //   ]}
-            >
+            <Form.Item label="Name" name="name">
               <Input />
             </Form.Item>
 
-            <Form.Item
-              label="Description"
-              name="description"
-              //   rules={[
-              //     {
-              //       required: true,
-              //       message: 'Please input your description!',
-              //     },
-              //   ]}
-            >
+            <Form.Item label="Description" name="description">
               <Input />
             </Form.Item>
             <Form.Item label="Assign to" name="assignee">
@@ -404,16 +380,7 @@ const AddProject = () => {
               </Select>
             </Form.Item>
 
-            <Form.Item
-              label="Timeframe"
-              name="timeframe"
-              //   rules={[
-              //     {
-              //       required: true,
-              //       message: 'Please input!',
-              //     },
-              //   ]}
-            >
+            <Form.Item label="Timeframe" name="timeframe">
               <RangePicker />
             </Form.Item>
 
@@ -432,7 +399,7 @@ const AddProject = () => {
           </Form>
         </Card>
       </Modal>
-    </>
+    </div>
   );
 };
 export default AddProject;
