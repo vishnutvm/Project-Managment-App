@@ -13,16 +13,22 @@ import {
   Select,
   Switch,
   Alert,
+  Tabs,
 } from 'antd';
 import axios from 'axios';
 import config from '../../Config/Config';
 import { useSelector } from 'react-redux';
 import ProjectTree from '../../Components/Tree/Tree';
 import DetailModal from '../../Components/NodeDetails/NodeDetails';
+import dayjs from 'dayjs';
+const { TabPane } = Tabs;
 
 const AddProject = () => {
   const [treeData, setTreeData] = useState([]);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
+  const [mode, setMode] = useState('createdByMe');
+
   const userDetails = useSelector((state) => state.user.loginUserDetails);
   const projectId = '';
   const token = userDetails.tokens[userDetails.tokens.length - 1];
@@ -38,6 +44,14 @@ const AddProject = () => {
   const [selectedMileStone, setselectedMileStone] = useState(null);
   const [isTask, setIsTask] = useState(true);
   const [showDetailModal, setShowDetailModal] = useState(null);
+  const [editModalType, setEditModalType] = useState('Unknown');
+  const [editModalData, setEditModalData] = useState({});
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+
+  const handleTabChange = (key) => {
+    setMode(key);
+  };
+
   const extractAllProjectData = (data) => {
     const allProjectsDetails = [];
 
@@ -75,10 +89,6 @@ const AddProject = () => {
       });
     });
 
-    console.log(
-      'extractAllProjectData ~ allProjectsDetails:',
-      allProjectsDetails
-    );
     return allProjectsDetails;
   };
   const fetchProject = async () => {
@@ -110,11 +120,43 @@ const AddProject = () => {
     }
   };
 
+  const fetchProjectAssignedToMe = async () => {
+    try {
+      const response = await axios.get(
+        `${config.apiUrl}/getAssignedItemsForUser`,
+        {},
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      if (response.data.isSuccess) {
+        if (
+          Array.isArray(response?.data?.response) &&
+          response?.data?.response.length > 0
+        ) {
+          const allProjectsData = response?.data?.response || [];
+          console.log("fetchProjectAssignedToMe ~ allProjectsData:", allProjectsData)
+          // setTreeData(allProjectsData);
+
+          // // Setting all Project ids
+          // const allProjectsDetails = extractAllProjectData(allProjectsData);
+          // setAllProject(allProjectsDetails);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
   useEffect(() => {
     fetchProject();
+    fetchProjectAssignedToMe();
   }, []);
 
   const handleCreateProject = () => {
+    form.resetFields();
     setShowProjectModal(true);
   };
   const onFinishCreateProject = async (values) => {
@@ -142,6 +184,56 @@ const AddProject = () => {
       fetchProject();
     }
   };
+
+  const onFinishEditProject = async (values) => {
+    try {
+      const type = editModalType;
+      let endpoint;
+      let requestData;
+      switch (type) {
+        case 'Project':
+          endpoint = `${config.apiUrl}/updateProject`;
+          requestData = {
+            projectId: editModalData._id,
+            ...values,
+          };
+          break;
+        case 'Milestone':
+          endpoint = `${config.apiUrl}/editMilestone`;
+          requestData = {
+            milestoneId: editModalData._id,
+            ...values,
+          };
+          break;
+        case 'Task':
+          endpoint = `${config.apiUrl}/editTask`;
+          requestData = {
+            taskId: editModalData._id,
+            ...values,
+          };
+          break;
+        default:
+          throw new Error('Invalid type');
+      }
+      const response = await axios.post(endpoint, requestData, {
+        headers: {
+          Authorization: token,
+        },
+      });
+      if (response.data.isSuccess) {
+        message.success('Operation successful');
+        setShowEditProjectModal(false);
+      } else {
+        message.error(response.data.error);
+      }
+    } catch (error) {
+      message.error('Something went wrong');
+    } finally {
+      editForm.resetFields();
+      fetchProject();
+    }
+  };
+
   const onFinishCreateMilestone = async (values) => {
     try {
       const response = await axios.post(
@@ -197,10 +289,12 @@ const AddProject = () => {
     }
   };
   const handleCreateTask = () => {
+    form.resetFields();
     setShowTaskModal(true);
   };
 
   const handleCreateMilestone = () => {
+    form.resetFields();
     setShowMilestoneModal(true);
   };
   const handleProjectModalOk = () => {
@@ -230,6 +324,74 @@ const AddProject = () => {
   const handleMileStoneSelect = (value) => {
     setselectedMileStone(value);
   };
+  const handleDelete = async (type, id) => {
+    console.log(type);
+    console.log(id);
+    try {
+      let response;
+      if (type === 'Project') {
+        response = await axios.post(
+          `${config.apiUrl}/deleteProject`,
+          { projectId: id },
+          {
+            headers: {
+              Authorization: token,
+            },
+          }
+        );
+      } else if (type === 'Milestone') {
+        response = await axios.post(
+          `${config.apiUrl}/deleteMilestone`,
+          { milestoneId: id },
+          {
+            headers: {
+              Authorization: token,
+            },
+          }
+        );
+      } else if (type === 'Task') {
+        response = await axios.post(
+          `${config.apiUrl}/deleteTask`,
+          { taskId: id },
+          {
+            headers: {
+              Authorization: token,
+            },
+          }
+        );
+      }
+      message.success('Delete successful');
+    } catch (error) {
+      message.error('Something Went Wrong');
+    } finally {
+      fetchProject();
+    }
+  };
+
+  const handleEdit = (type, id) => {
+    console.log(type);
+    console.log(id);
+
+    const selectedNode = findNodeById(treeData, id);
+    if (selectedNode) {
+      console.log('handleEdit ~ selectedNode:', selectedNode);
+      setEditModalData(selectedNode);
+      setEditModalType(type);
+
+      // Update initial values of editForm
+      editForm.setFieldsValue({
+        name: selectedNode.name,
+        description: selectedNode.description,
+        timeframe: selectedNode.timeframe,
+      });
+
+      if (type === 'Project') {
+        setShowEditProjectModal(true);
+      }
+    } else {
+      console.log('Node not found with ID:', id);
+    }
+  };
 
   const findNodeById = (data, id) => {
     for (const node of data) {
@@ -248,10 +410,8 @@ const AddProject = () => {
     return null;
   };
   const handleTreeNodeSelection = (id) => {
-    console.log('handleTreeNodeSelection ~ id:', id);
     const selectedNode = findNodeById(treeData, id);
     if (selectedNode) {
-      console.log('Selected Node:', selectedNode);
       setShowDetailModal(selectedNode);
     } else {
       console.log('Node not found with ID:', id);
@@ -262,18 +422,22 @@ const AddProject = () => {
     setShowDetailModal(null);
   };
 
+  const handleCancelEditProject = () => {
+    editForm.resetFields();
+    setEditModalData({});
+    setShowEditProjectModal(false);
+  };
+
   return (
     <>
-      {' '}
       <div
         style={{
-          margin: 'auto',
-          padding: '20px',
-          width: '100%',
-          marginBottom: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <div style={{ margin: 'auto', maxWidth: '1200px' }}>
+        <div style={{ width: '100%', maxWidth: '1200px', padding: '20px' }}>
           <Flex justify="center" gap={24} style={{ marginBottom: '40px' }}>
             <Button type="primary" onClick={handleCreateProject}>
               Create Project
@@ -286,17 +450,27 @@ const AddProject = () => {
             </Button>
           </Flex>
 
-          {/* Tree Structure Cards */}
-          <Flex justify="center" align="flex-start" wrap="wrap" gap={24}>
-            {treeData.map((project) => (
-              <Card className="w-[90%]" key={project.key}>
-                <ProjectTree
-                  data={[project]}
-                  onNodeSelect={handleTreeNodeSelection}
-                />
-              </Card>
-            ))}
-          </Flex>
+          <Tabs
+            defaultActiveKey="createdByMe"
+            onChange={handleTabChange}
+            centered
+          >
+            <TabPane tab="Created By Me" key="createdByMe">
+              <Flex justify="center" align="flex-start" wrap="wrap" gap={24}>
+                {treeData.map((project) => (
+                  <Card className="w-[90%]" key={project.key}>
+                    <ProjectTree
+                      data={[project]}
+                      onNodeSelect={handleTreeNodeSelection}
+                    />
+                  </Card>
+                ))}
+              </Flex>
+            </TabPane>
+            <TabPane tab="Assigned to Me" key="assignedToMe">
+              Assigned to Me
+            </TabPane>
+          </Tabs>
         </div>
       </div>
       {/* Buttons For Creating Project, MileStone, Task */}
@@ -367,6 +541,92 @@ const AddProject = () => {
               <Flex justify="space-between">
                 <Button htmlType="submit" type="primary">
                   Save Project
+                </Button>
+              </Flex>
+            </Form.Item>
+          </Form>
+        </Card>
+      </Modal>
+      {/* Edit Project */}
+      <Modal
+        title="Edit Project"
+        visible={showEditProjectModal}
+        onCancel={handleCancelEditProject}
+        footer={null}
+      >
+        <Card>
+          <Form
+            form={editForm}
+            className="mt-8 w-full"
+            name="basic"
+            labelCol={{
+              span: 8,
+            }}
+            wrapperCol={{
+              span: 24,
+            }}
+            style={{
+              maxWidth: 700,
+            }}
+            initialValues={{
+              name: editModalData?.name,
+              description: editModalData?.description,
+              // timeframe: [
+              //   dayjs('2024-04-05T18:30:00.000Z'),
+              //   dayjs('2024-04-08T18:30:00.000Z'),
+              // ],
+            }}
+            onFinish={onFinishEditProject}
+            onFinishFailed={onFinishFailed}
+            autoComplete="off"
+          >
+            <Form.Item
+              label="Project Name"
+              name="name"
+              rules={[{ required: true, message: 'Please Enter a Name!' }]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="Description"
+              name="description"
+              rules={[
+                { required: true, message: 'Please Enter a description!' },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="Timeframe"
+              name="timeframe"
+              rules={[
+                { required: true, message: 'Please Select a Time Frame!' },
+              ]}
+            >
+              {editModalData?.timeframe &&
+              editModalData?.timeframe.length > 1 ? (
+                <RangePicker
+                // defaultValue={[
+                //   dayjs(editModalData?.timeframe[0]),
+                //   dayjs(editModalData?.timeframe[1]),
+                // ]}
+                />
+              ) : (
+                <RangePicker />
+              )}
+            </Form.Item>
+
+            <Form.Item
+              wrapperCol={{
+                offset: 8,
+                span: 16,
+              }}
+            >
+              <Flex justify="space-between">
+                <Button htmlType="submit" type="primary">
+                  Save Changes
                 </Button>
               </Flex>
             </Form.Item>
@@ -617,6 +877,8 @@ const AddProject = () => {
         visible={showDetailModal}
         data={showDetailModal}
         onCancel={onDetailsModalCancel}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
       />
     </>
   );

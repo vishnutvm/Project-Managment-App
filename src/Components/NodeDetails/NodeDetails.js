@@ -16,13 +16,28 @@ const DetailModal = ({
   };
 
   const handleConfirmDelete = () => {
-    onDelete(data._id);
+    const type = data?.projectStatus
+      ? 'Project'
+      : data?.milestoneStatus
+      ? 'Milestone'
+      : data?.taskStatus
+      ? 'Task'
+      : 'Unknown';
+    onDelete(type, data._id);
     setShowConfirmDeleteModal(false);
     onCancel();
   };
 
   const handleEdit = () => {
-    onEdit(data._id);
+    const type = data?.projectStatus
+      ? 'Project'
+      : data?.milestoneStatus
+      ? 'Milestone'
+      : data?.taskStatus
+      ? 'Task'
+      : 'Unknown';
+    onEdit(type, data._id);
+    onCancel();
   };
 
   const handleClose = () => {
@@ -64,9 +79,7 @@ const DetailModal = ({
         ]}
       >
         <Descriptions column={1}>
-          <Descriptions.Item label="Name">
-            {data?.description}
-          </Descriptions.Item>
+          <Descriptions.Item label="Name">{data?.name}</Descriptions.Item>
           <Descriptions.Item label="Description">
             {data?.description}
           </Descriptions.Item>
@@ -76,9 +89,10 @@ const DetailModal = ({
               <Descriptions column={2}>
                 {data.timeframe && data?.timeframe?.length > 1 && (
                   <Descriptions.Item label="Timeframe">
-                    {data.timeframe[0]} - {data.timeframe[1]}
+                    {`${data.timeframe[0]} - ${data.timeframe[1]}`}
                   </Descriptions.Item>
                 )}
+
                 <Descriptions.Item label="Percentage">
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <span
@@ -91,13 +105,6 @@ const DetailModal = ({
                     >
                       {data.projectPercentage}%
                     </span>
-                    {/* <div style={{ flex: '1', marginLeft: '12px' }}>
-                      <Progress
-                        type="circle"
-                        percent={data.projectPercentage}
-                        width={60}
-                      />
-                    </div> */}
                   </div>
                 </Descriptions.Item>
                 <Descriptions.Item label="Project Status">
@@ -118,7 +125,7 @@ const DetailModal = ({
               <Descriptions column={2}>
                 {data.timeframe && data?.timeframe?.length > 1 && (
                   <Descriptions.Item label="Timeframe">
-                    {data.timeframe[0]} - {data.timeframe[1]}
+                    {`${data.timeframe[0]} - ${data.timeframe[1]}`}
                   </Descriptions.Item>
                 )}
                 <Descriptions.Item label="Percentage">
@@ -131,16 +138,16 @@ const DetailModal = ({
                         color: '#1890ff',
                       }}
                     >
-                      {data.projectPercentage}%
+                      {data.currentPercentage}%
                     </span>
                   </div>
                 </Descriptions.Item>
                 <Descriptions.Item label="Project Status">
                   <Badge
                     status={
-                      data.projectStatus === 'open' ? 'processing' : 'success'
+                      data.milestoneStatus === 'open' ? 'processing' : 'success'
                     }
-                    text={data.projectStatus.toUpperCase()}
+                    text={data.milestoneStatus.toUpperCase()}
                   />
                 </Descriptions.Item>
               </Descriptions>
@@ -164,16 +171,16 @@ const DetailModal = ({
                         color: '#1890ff',
                       }}
                     >
-                      {data.projectPercentage}%
+                      {data.currentPercentage}%
                     </span>
                   </div>
                 </Descriptions.Item>
                 <Descriptions.Item label="Project Status">
                   <Badge
                     status={
-                      data.projectStatus === 'open' ? 'processing' : 'success'
+                      data.taskStatus === 'open' ? 'processing' : 'success'
                     }
-                    text={data.projectStatus.toUpperCase()}
+                    text={data.taskStatus.toUpperCase()}
                   />
                 </Descriptions.Item>
               </Descriptions>

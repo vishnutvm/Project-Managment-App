@@ -3,7 +3,7 @@ import { Tree } from 'antd';
 
 const buildTreeData = (data) => {
   return data.map((item) => ({
-    title: item.name,
+    title: `${item.name} - ${item.projectPercentage ? `(${item.projectPercentage})` : ''} ${item.currentPercentage ? `(${item.currentPercentage})` : '0%'}`,
     key: item._id,
     children: item.milestones
       ? buildTreeData(item.milestones)
