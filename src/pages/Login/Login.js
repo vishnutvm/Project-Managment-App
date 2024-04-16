@@ -56,7 +56,7 @@ function Login() {
               const user = response.data.response;
               console.log("user",user);
               dispatch(getUserLoginDetails(user));
-              navigate("/dashboard")
+              navigate("/")
             
             } else {
               message.error(response.data?.error);

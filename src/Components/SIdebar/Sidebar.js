@@ -1,41 +1,37 @@
-import React from "react";
+import React from 'react';
 import {
   UploadOutlined,
   UserOutlined,
   VideoCameraOutlined,
-  LogoutOutlined
-} from "@ant-design/icons";
-import { Layout, Menu, theme } from "antd";
-import "../SIdebar/Sidebar.css";
-import norq from "../../assets/norq.jpeg";
-import { Link } from "react-router-dom";
-import { logoutUser } from "../../Redux/UserReducer";
-import {useDispatch} from "react-redux";
-import {useNavigate} from "react-router-dom"
+  LogoutOutlined,
+} from '@ant-design/icons';
+import { Layout, Menu, theme } from 'antd';
+import '../SIdebar/Sidebar.css';
+import norq from '../../assets/norq.jpeg';
+import { Link } from 'react-router-dom';
+import { logoutUser } from '../../Redux/UserReducer';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 const { Sider } = Layout;
 
-
-
 const Sidebar = () => {
-  const dispatch=useDispatch()
+  const dispatch = useDispatch();
   const items = [
-    { key: "1", icon: <UserOutlined />, label: "Project", link: "/tree" },
-    { key: "2", icon: < UploadOutlined />, label: "Create Project", link: "/addproject" },
-    { key: "3", icon: <VideoCameraOutlined />, label: "Tasks",link:"/tasks" },
-    { key: "4", icon: <UserOutlined />, label: "Members",link:"/members" },
-    { 
-      key: "5", 
-      icon: <LogoutOutlined />, 
-      label: "Logout", 
+    { key: '1', icon: <UserOutlined />, label: 'Project', link: '/' },
+    { key: '2', icon: <VideoCameraOutlined />, label: 'Tasks', link: '/tasks' },
+    { key: '3', icon: <UserOutlined />, label: 'Members', link: '/members' },
+    {
+      key: '4',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
       onClick: () => {
         dispatch(logoutUser());
-        navigate('/login'); 
-      } 
+        navigate('/login');
+      },
     },
-  ]
-  
-  const navigate=useNavigate()
-  
+  ];
+
+  const navigate = useNavigate();
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -54,14 +50,13 @@ const Sidebar = () => {
       <div className="logo">
         <img className="logo" src={norq} alt="Logo" />
       </div>
-      <Menu  mode="inline" defaultSelectedKeys={["1"]}>
-  {items.map((item) => (
-    <Menu.Item key={item.key} icon={item.icon} onClick={item.onClick}>
-      <Link to={item.link}>{item.label}</Link>
-    </Menu.Item>
-  ))}
-   
-</Menu>
+      <Menu mode="inline" defaultSelectedKeys={['1']}>
+        {items.map((item) => (
+          <Menu.Item key={item.key} icon={item.icon} onClick={item.onClick}>
+            <Link to={item.link}>{item.label}</Link>
+          </Menu.Item>
+        ))}
+      </Menu>
     </Sider>
   );
 };

@@ -10,11 +10,10 @@ import Projects from "./Modules/Project/Projects";
 import AddProject from "./Modules/Project/AddProject";
 import Forms from "./Components/CommonForm/TaskForms";
 import Layouts from "./Layouts/Layouts";
-import Notfound from "./pages/Notfound/Notfound";
 import Tasks from "./Modules/Tasks/Tasks";
 import Members from "./Modules/Members/Members";
 import SearchBar from "./Components/SearchBar/SearchBar";
-import TreeStructure from "./Components/TreeComponent/TreeStructure";
+import AllProjects from "./Components/TreeComponent/AllProjects";
 
 
 function App() {
@@ -96,9 +95,9 @@ function App() {
                   <Route path="/sidebar" element={<Sidebar />} />
                   <Route path="/header" element={<Headers />} />
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects" element={<AllProjects />} />
                   <Route path="/commonform" element={<Forms />} />
-                  <Route path="/tree" element={<TreeStructure />} />
+                  <Route path="/" element={<AddProject />} />
                   <Route path="/addproject" element={<AddProject />} />
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/members" element={<Members />} />

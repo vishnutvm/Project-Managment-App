@@ -1,4 +1,4 @@
-import React, {  useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Tree } from 'antd';
 
 const buildTreeData = (data) => {
@@ -13,15 +13,14 @@ const buildTreeData = (data) => {
   }));
 };
 
-// Component to Render The Tree Structure of any Project task Hirarchy, Need to Pass data parameters , each elements the tree need a unique id
-const ProjectTree = ({ data }) => {
+const ProjectTree = ({ data, onNodeSelect = () => {} }) => {
   const treeData = useMemo(() => buildTreeData(data), [data]);
 
-  return (
-    <Tree
-      treeData={treeData}
-    />
-  );
+  const handleNodeSelect = (selectedKeys = [], info) => {
+    onNodeSelect(selectedKeys[0]);
+  };
+
+  return <Tree treeData={treeData} onSelect={handleNodeSelect} />;
 };
 
 export default ProjectTree;

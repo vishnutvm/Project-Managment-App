@@ -209,8 +209,8 @@ const projectsData = [
   
 ];
 
-const TreeStructure = () => {
-  const [expandedKeys, setExpandedKeys] = useState(["0-0-0", "0-0-1"]);
+const AllProjects = () => {
+  const [expandedKeys, setExpandedKeys] = useState();
   const [checkedKeys, setCheckedKeys] = useState(["0-0-0"]);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [autoExpandParent, setAutoExpandParent] = useState(false);
@@ -249,4 +249,4 @@ const TreeStructure = () => {
   </Flex>
 );
 };
-export default TreeStructure;
+export default AllProjects;
