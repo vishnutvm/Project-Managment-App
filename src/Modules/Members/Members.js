@@ -254,15 +254,6 @@ function Members() {
                 />
                 <Button
                   style={{
-                    borderColor: "green",
-                    color: "green",
-                    marginRight: "55px",
-                  }}
-                >
-                  Requested
-                </Button>
-                <Button
-                  style={{
                     borderColor: "red",
                     color: "red",
                     marginRight: "55px",

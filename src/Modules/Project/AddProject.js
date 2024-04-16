@@ -21,22 +21,38 @@ import { useSelector } from 'react-redux';
 import ProjectTree from '../../Components/Tree/Tree';
 import DetailModal from '../../Components/NodeDetails/NodeDetails';
 import dayjs from 'dayjs';
+import moment from 'moment';
 const { TabPane } = Tabs;
 
 const AddProject = () => {
   const [treeData, setTreeData] = useState([]);
+  const [assignedToMeTreeData, setAssignedToMeTreeData] = useState([]);
   const [form] = Form.useForm();
+  const [allMileStonesAssignedToMe, setAllMileStonesAssignedToMe] = useState(
+    []
+  );
+  const [allTasksAssignedToMe, setAllTasksAssignedToMe] = useState([]);
   const [editForm] = Form.useForm();
   const [mode, setMode] = useState('createdByMe');
-
+  const [selectedTimeframe, setSelectedTimeframe] = useState([
+    moment('2024-04-05T18:30:00.000Z'),
+    moment('2024-04-08T18:30:00.000Z'),
+  ]);
+  const [assingedTaskSubTaskCreatin, setAssingedTaskSubTaskCreatin] =
+    useState(true);
   const userDetails = useSelector((state) => state.user.loginUserDetails);
   const projectId = '';
   const token = userDetails.tokens[userDetails.tokens.length - 1];
-  const memberList = userDetails.members;
   const assignedBy = userDetails._id;
+  const memberList = [
+    ...userDetails.members,
+    { email: 'Assign To Me', _id: assignedBy },
+  ];
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showTaskModal2, setShowTaskModal2] = useState(false);
+  const [showSubTaskModal2, setShowSubTaskModal2] = useState(false);
   const [Project, setProject] = useState({});
   const [milestone, setMilestone] = useState({});
   const [allProject, setAllProject] = useState([]);
@@ -47,7 +63,8 @@ const AddProject = () => {
   const [editModalType, setEditModalType] = useState('Unknown');
   const [editModalData, setEditModalData] = useState({});
   const [showEditProjectModal, setShowEditProjectModal] = useState(false);
-
+  const [showEditMileStoneModal, setShowEditMileStoneModal] = useState(false);
+  const [showEditTaskModal, setShowEditTaskModal] = useState(false);
   const handleTabChange = (key) => {
     setMode(key);
   };
@@ -119,30 +136,32 @@ const AddProject = () => {
       console.error('Error fetching data:', error);
     }
   };
-
   const fetchProjectAssignedToMe = async () => {
     try {
       const response = await axios.get(
         `${config.apiUrl}/getAssignedItemsForUser`,
-        {},
         {
           headers: {
             Authorization: token,
           },
         }
       );
-      if (response.data.isSuccess) {
+      if (response.data.success) {
         if (
-          Array.isArray(response?.data?.response) &&
-          response?.data?.response.length > 0
+          Array.isArray(response?.data?.data?.data) &&
+          response?.data?.data?.data.length > 0
         ) {
-          const allProjectsData = response?.data?.response || [];
-          console.log("fetchProjectAssignedToMe ~ allProjectsData:", allProjectsData)
-          // setTreeData(allProjectsData);
+          const allProjectsData =
+            response?.data?.data?.data.map((item) => ({
+              ...item.item,
+              itemType: item.itemType,
+            })) || [];
 
-          // // Setting all Project ids
-          // const allProjectsDetails = extractAllProjectData(allProjectsData);
-          // setAllProject(allProjectsDetails);
+          setAssignedToMeTreeData(allProjectsData);
+          console.log(
+            'fetchProjectAssignedToMe ~ allProjectsData:',
+            allProjectsData
+          );
         }
       }
     } catch (error) {
@@ -185,7 +204,7 @@ const AddProject = () => {
     }
   };
 
-  const onFinishEditProject = async (values) => {
+  const onFinishEdit = async (values) => {
     try {
       const type = editModalType;
       let endpoint;
@@ -222,7 +241,6 @@ const AddProject = () => {
       });
       if (response.data.isSuccess) {
         message.success('Operation successful');
-        setShowEditProjectModal(false);
       } else {
         message.error(response.data.error);
       }
@@ -230,6 +248,9 @@ const AddProject = () => {
       message.error('Something went wrong');
     } finally {
       editForm.resetFields();
+      setShowEditProjectModal(false);
+      setShowEditMileStoneModal(false);
+      setShowEditTaskModal(false);
       fetchProject();
     }
   };
@@ -238,7 +259,7 @@ const AddProject = () => {
     try {
       const response = await axios.post(
         `${config.apiUrl}/createMilestone`,
-        { projectId: values.projectId, assignedBy, values: { ...values } },
+        { assignedBy, ...values },
         {
           headers: {
             Authorization: token,
@@ -259,15 +280,31 @@ const AddProject = () => {
     }
   };
   const onFinishTaskCreation = async (values) => {
+    // If adding on Sub task
+    if (showTaskModal2) {
+      let projectId = '';
+      let milestoneId = '';
+
+      if (values.milestoneId) {
+        const selectedNode = findNodeById(assignedToMeTreeData, values.milestoneId);
+        milestoneId = values.milestoneId
+        projectId = selectedNode.projectId;
+      } else if (values.parentTaskId) {
+        const selectedNode = findNodeById(assignedToMeTreeData, values.parentTaskId);
+        console.log("onFinishTaskCreation ~ selectedNode:", selectedNode)
+        projectId = selectedNode.projectId;
+        milestoneId = selectedNode.milestoneId;
+      }
+
+      values = { ...values, projectId, milestoneId };
+    }
+
     try {
       const response = await axios.post(
         `${config.apiUrl}/createTask`,
         {
-          values,
           assignedBy,
-          parentTaskId: values.parentTaskId,
-          projectId: values.projectId,
-          milestoneId: values.milestoneId,
+          ...values,
         },
         {
           headers: {
@@ -291,6 +328,12 @@ const AddProject = () => {
   const handleCreateTask = () => {
     form.resetFields();
     setShowTaskModal(true);
+  };
+
+  const handleCreateTaskOnAssigned = () => {
+    form.resetFields();
+    setShowTaskModal2(true);
+    setAssingedTaskSubTaskCreatin(true);
   };
 
   const handleCreateMilestone = () => {
@@ -317,6 +360,7 @@ const AddProject = () => {
     setShowProjectModal(false);
     setShowMilestoneModal(false);
     setShowTaskModal(false);
+    setShowTaskModal2(false);
   };
   const handleProjectSelect = (value) => {
     setSelectedProject(value);
@@ -325,8 +369,6 @@ const AddProject = () => {
     setselectedMileStone(value);
   };
   const handleDelete = async (type, id) => {
-    console.log(type);
-    console.log(id);
     try {
       let response;
       if (type === 'Project') {
@@ -369,12 +411,8 @@ const AddProject = () => {
   };
 
   const handleEdit = (type, id) => {
-    console.log(type);
-    console.log(id);
-
     const selectedNode = findNodeById(treeData, id);
     if (selectedNode) {
-      console.log('handleEdit ~ selectedNode:', selectedNode);
       setEditModalData(selectedNode);
       setEditModalType(type);
 
@@ -387,6 +425,15 @@ const AddProject = () => {
 
       if (type === 'Project') {
         setShowEditProjectModal(true);
+      } else if (type === 'Milestone') {
+        setShowEditMileStoneModal(true);
+      } else if (type === 'Task') {
+        selectedNode.projectId && setSelectedProject(selectedNode.projectId);
+
+        selectedNode.milestoneId &&
+          setselectedMileStone(selectedNode.milestoneId);
+        setIsTask(!selectedNode.parentTaskId);
+        setShowEditTaskModal(true);
       }
     } else {
       console.log('Node not found with ID:', id);
@@ -411,10 +458,11 @@ const AddProject = () => {
   };
   const handleTreeNodeSelection = (id) => {
     const selectedNode = findNodeById(treeData, id);
+    const selectedNode2 = findNodeById(assignedToMeTreeData, id);
     if (selectedNode) {
       setShowDetailModal(selectedNode);
-    } else {
-      console.log('Node not found with ID:', id);
+    } else if(selectedNode2) {
+      setShowDetailModal(selectedNode2);
     }
   };
 
@@ -427,6 +475,16 @@ const AddProject = () => {
     setEditModalData({});
     setShowEditProjectModal(false);
   };
+  const handleCancelEditMileStone = () => {
+    editForm.resetFields();
+    setEditModalData({});
+    setShowEditMileStoneModal(false);
+  };
+  const handleCancelEditTask = () => {
+    editForm.resetFields();
+    setEditModalData({});
+    setShowEditTaskModal(false);
+  };
 
   return (
     <>
@@ -438,24 +496,24 @@ const AddProject = () => {
         }}
       >
         <div style={{ width: '100%', maxWidth: '1200px', padding: '20px' }}>
-          <Flex justify="center" gap={24} style={{ marginBottom: '40px' }}>
-            <Button type="primary" onClick={handleCreateProject}>
-              Create Project
-            </Button>
-            <Button type="primary" onClick={handleCreateMilestone}>
-              Create Milestone
-            </Button>
-            <Button type="primary" onClick={handleCreateTask}>
-              Create Task
-            </Button>
-          </Flex>
-
           <Tabs
             defaultActiveKey="createdByMe"
             onChange={handleTabChange}
             centered
           >
             <TabPane tab="Created By Me" key="createdByMe">
+              <Flex justify="center" gap={24} style={{ marginBottom: '40px' }}>
+                <Button type="primary" onClick={handleCreateProject}>
+                  Create Project
+                </Button>
+                <Button type="primary" onClick={handleCreateMilestone}>
+                  Create Milestone
+                </Button>
+                <Button type="primary" onClick={handleCreateTask}>
+                  Create Task
+                </Button>
+              </Flex>
+
               <Flex justify="center" align="flex-start" wrap="wrap" gap={24}>
                 {treeData.map((project) => (
                   <Card className="w-[90%]" key={project.key}>
@@ -468,12 +526,27 @@ const AddProject = () => {
               </Flex>
             </TabPane>
             <TabPane tab="Assigned to Me" key="assignedToMe">
-              Assigned to Me
+              <Flex justify="center" gap={24} style={{ marginBottom: '40px' }}>
+                <Button type="primary" onClick={handleCreateTaskOnAssigned}>
+                  Create Task
+                </Button>
+              </Flex>
+
+              <Flex justify="center" align="flex-start" wrap="wrap" gap={24}>
+                {assignedToMeTreeData.map((project) => (
+                  <Card className="w-[90%]" key={project.key}>
+                    <ProjectTree
+                      data={[project]}
+                      onNodeSelect={handleTreeNodeSelection}
+                    />
+                  </Card>
+                ))}
+              </Flex>
             </TabPane>
           </Tabs>
         </div>
       </div>
-      {/* Buttons For Creating Project, MileStone, Task */}
+
       {/* Modals */}
       {/* Create Project */}
       <Modal
@@ -569,14 +642,10 @@ const AddProject = () => {
               maxWidth: 700,
             }}
             initialValues={{
-              name: editModalData?.name,
-              description: editModalData?.description,
-              // timeframe: [
-              //   dayjs('2024-04-05T18:30:00.000Z'),
-              //   dayjs('2024-04-08T18:30:00.000Z'),
-              // ],
+              name: editModalData?.name || '',
+              description: editModalData?.description || '',
             }}
-            onFinish={onFinishEditProject}
+            onFinish={onFinishEdit}
             onFinishFailed={onFinishFailed}
             autoComplete="off"
           >
@@ -597,25 +666,237 @@ const AddProject = () => {
             >
               <Input />
             </Form.Item>
-
-            <Form.Item
+            {/* <Form.Item
               label="Timeframe"
               name="timeframe"
               rules={[
                 { required: true, message: 'Please Select a Time Frame!' },
               ]}
             >
-              {editModalData?.timeframe &&
-              editModalData?.timeframe.length > 1 ? (
-                <RangePicker
-                // defaultValue={[
-                //   dayjs(editModalData?.timeframe[0]),
-                //   dayjs(editModalData?.timeframe[1]),
-                // ]}
-                />
-              ) : (
-                <RangePicker />
-              )}
+              <RangePicker
+              // value={selectedTimeframe}
+              // onChange={setSelectedTimeframe}
+              />
+            </Form.Item> */}
+
+            <Form.Item
+              wrapperCol={{
+                offset: 8,
+                span: 16,
+              }}
+            >
+              <Flex justify="space-between">
+                <Button htmlType="submit" type="primary">
+                  Save Changes
+                </Button>
+              </Flex>
+            </Form.Item>
+          </Form>
+        </Card>
+      </Modal>
+
+      {/* Edit MileStone */}
+      <Modal
+        title="Edit Milestone"
+        visible={showEditMileStoneModal}
+        onCancel={handleCancelEditMileStone}
+        footer={null}
+      >
+        <Card>
+          <Form
+            form={editForm}
+            className="mt-8 w-full"
+            name="basic"
+            labelCol={{
+              span: 8,
+            }}
+            wrapperCol={{
+              span: 24,
+            }}
+            style={{
+              maxWidth: 700,
+            }}
+            initialValues={{
+              name: editModalData?.name || '',
+              description: editModalData?.description || '',
+              assignee: editModalData?.assignee || '',
+              projectId: editModalData?.projectId || '',
+            }}
+            onFinish={onFinishEdit}
+            onFinishFailed={onFinishFailed}
+            autoComplete="off"
+          >
+            <Form.Item
+              label="Select Project"
+              name="projectId"
+              rules={[{ required: true, message: 'Please Select a Project!' }]}
+            >
+              <Select>
+                {allProject.map((project) => (
+                  <Option value={project._id}>{project.name}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="Name"
+              name="name"
+              rules={[{ required: true, message: 'Please Enter a Name!' }]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="Description"
+              name="description"
+              rules={[
+                { required: true, message: 'Please Enter a description!' },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Assign to"
+              name="assignee"
+              rules={[{ required: true, message: 'Please Assign to Someone!' }]}
+            >
+              <Select>
+                {memberList.map((friend) => (
+                  <Option value={friend._id}>{friend.email}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              wrapperCol={{
+                offset: 8,
+                span: 16,
+              }}
+            >
+              <Flex justify="space-between">
+                <Button htmlType="submit" type="primary">
+                  Save Changes
+                </Button>
+              </Flex>
+            </Form.Item>
+          </Form>
+        </Card>
+      </Modal>
+
+      {/* Edit Task */}
+      <Modal
+        title="Edit Task"
+        visible={showEditTaskModal}
+        onCancel={handleCancelEditTask}
+        footer={null}
+      >
+        <Card>
+          <Form
+            form={editForm}
+            className="mt-8 w-full"
+            name="basic"
+            labelCol={{
+              span: 8,
+            }}
+            wrapperCol={{
+              span: 24,
+            }}
+            style={{
+              maxWidth: 700,
+            }}
+            initialValues={{
+              name: editModalData?.name || '',
+              description: editModalData?.description || '',
+              assignee: editModalData?.assignee || '',
+              projectId: editModalData?.projectId || '',
+              milestoneId: editModalData?.milestoneId || '',
+              // parentTaskId: editModalData?.parentTaskId || '',
+            }}
+            onFinish={onFinishEdit}
+            onFinishFailed={onFinishFailed}
+            autoComplete="off"
+          >
+            <Form.Item
+              label="Select Project"
+              name="projectId"
+              rules={[{ required: true, message: 'Please Select a Project!' }]}
+            >
+              <Select>
+                {allProject.map((project) => (
+                  <Option key={project._id} value={project._id}>
+                    {project.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Select Milestone"
+              name="milestoneId"
+              rules={[
+                { required: true, message: 'Please select a Milestone!' },
+              ]}
+            >
+              <Select onChange={handleMileStoneSelect}>
+                {selectedProject &&
+                  allProject
+                    .find((project) => project._id === selectedProject)
+                    .milestones.map((milestone) => (
+                      <Option key={milestone._id} value={milestone._id}>
+                        {milestone.name}
+                      </Option>
+                    ))}
+              </Select>
+            </Form.Item>
+
+            {!isTask && selectedProject && selectedMileStone && (
+              <Form.Item
+                label="Select Task"
+                name="parentTaskId"
+                rules={[{ required: true, message: 'Please select a task!' }]}
+                initialValue={editModalData?.parentTaskId || ''}
+              >
+                <Select>
+                  {allProject
+                    ?.find((project) => project._id === selectedProject)
+                    ?.milestones.find(
+                      (milestone) => milestone._id === selectedMileStone
+                    )
+                    ?.tasks?.map((task) => (
+                      <Option key={task._id} value={task._id}>
+                        {task.name}
+                      </Option>
+                    ))}
+                </Select>
+              </Form.Item>
+            )}
+
+            <Form.Item
+              label="Name"
+              name="name"
+              rules={[{ required: true, message: 'Please Enter a Name!' }]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="Description"
+              name="description"
+              rules={[
+                { required: true, message: 'Please Enter a description!' },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Assign to"
+              name="assignee"
+              rules={[{ required: true, message: 'Please Assign to Someone!' }]}
+            >
+              <Select>
+                {memberList.map((friend) => (
+                  <Option value={friend._id}>{friend.email}</Option>
+                ))}
+              </Select>
             </Form.Item>
 
             <Form.Item
@@ -654,9 +935,6 @@ const AddProject = () => {
             }}
             style={{
               maxWidth: 700,
-            }}
-            initialValues={{
-              remember: true,
             }}
             onFinish={onFinishCreateMilestone}
             onFinishFailed={onFinishFailed}
@@ -729,7 +1007,7 @@ const AddProject = () => {
       </Modal>
       {/* Create  Task */}
       <Modal
-        title="Create Subtask"
+        title="Create Task"
         open={showTaskModal}
         onOk={handleTaskModalOk}
         onCancel={handleCancel}
@@ -873,7 +1151,137 @@ const AddProject = () => {
           </Form>
         </Card>
       </Modal>
+
+      <Modal
+        title="Create Task"
+        open={showTaskModal2}
+        onOk={handleTaskModalOk}
+        onCancel={handleCancel}
+        footer={false}
+      >
+        <Card>
+          <Form
+            form={form}
+            className="mt-8  w-full"
+            name="basic"
+            labelCol={{
+              span: 8,
+            }}
+            wrapperCol={{
+              span: 24,
+            }}
+            style={{
+              maxWidth: 700,
+            }}
+            initialValues={{
+              remember: true,
+            }}
+            onFinish={onFinishTaskCreation}
+            onFinishFailed={onFinishFailed}
+            autoComplete="off"
+          >
+            <Form.Item label="Task Type" name="isTask">
+              <Switch
+                checkedChildren="Task"
+                unCheckedChildren="Subtask"
+                checked={isTask}
+                onChange={(checked) => setIsTask(checked)}
+              />
+            </Form.Item>
+
+            {isTask ? (
+              <Form.Item
+                label="Select Milestone"
+                name="milestoneId"
+                rules={[
+                  { required: true, message: 'Please select a Milestone!' },
+                ]}
+              >
+                <Select onChange={handleMileStoneSelect}>
+                  {assignedToMeTreeData
+                    .filter((item) => item.itemType === 'milestone')
+                    .map((milestone) => (
+                      <Option key={milestone._id} value={milestone._id}>
+                        {milestone.name}
+                      </Option>
+                    ))}
+                </Select>
+              </Form.Item>
+            ) : (
+              <Form.Item
+                label="Select Task"
+                name="parentTaskId"
+                rules={[{ required: true, message: 'Please select a task!' }]}
+              >
+                <Select onChange={handleMileStoneSelect}>
+                  {assignedToMeTreeData
+                    .filter((item) => item.itemType === 'task')
+                    .map((task) => (
+                      <Option key={task._id} value={task._id}>
+                        {task.name}
+                      </Option>
+                    ))}
+                </Select>
+              </Form.Item>
+            )}
+
+            <Form.Item
+              label="Name"
+              name="name"
+              rules={[{ required: true, message: 'Please Enter a Name!' }]}
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
+              label="Description"
+              name="description"
+              rules={[
+                { required: true, message: 'Please Enter a description!' },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Assign to"
+              name="assignee"
+              rules={[{ required: true, message: 'Please Assign to Someone!' }]}
+            >
+              <Select>
+                {memberList.map((friend) => (
+                  <Option value={friend._id}>{friend.email}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Timeframe"
+              name="timeframe"
+              rules={[
+                { required: true, message: 'Please Select a Time Frame!' },
+              ]}
+            >
+              <RangePicker />
+            </Form.Item>
+
+            <Form.Item
+              wrapperCol={{
+                offset: 8,
+                span: 16,
+              }}
+            >
+              <Flex justify="space-between">
+                <Button htmlType="submit" type="primary">
+                  Save Task
+                </Button>
+              </Flex>
+            </Form.Item>
+          </Form>
+        </Card>
+      </Modal>
+
       <DetailModal
+      assignedBy={assignedBy}
         visible={showDetailModal}
         data={showDetailModal}
         onCancel={onDetailsModalCancel}

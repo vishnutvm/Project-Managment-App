@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Button, Descriptions, Alert, Progress, Badge } from 'antd';
 
 const DetailModal = ({
+  assignedBy='',
   visible = {},
   data = {},
   type = '',
@@ -70,12 +71,16 @@ const DetailModal = ({
         visible={visible}
         onCancel={handleClose}
         footer={[
-          <Button key="edit" onClick={handleEdit}>
-            Edit
-          </Button>,
-          <Button key="delete" type="danger" onClick={handleDelete}>
-            Delete
-          </Button>,
+          assignedBy === (data?.assignedBy || data?.ownerId) && (  
+            <Button key="edit" onClick={handleEdit}>
+              Edit
+            </Button>
+          ),
+          assignedBy === (data?.assignedBy || data?.ownerId) && (
+            <Button key="delete" type="danger" onClick={handleDelete}>
+              Delete
+            </Button>
+          ),
         ]}
       >
         <Descriptions column={1}>
