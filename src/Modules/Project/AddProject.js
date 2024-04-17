@@ -384,7 +384,7 @@ const AddProject = () => {
       } else if (type === 'Milestone') {
         response = await axios.post(
           `${config.apiUrl}/deleteMilestone`,
-          { milestoneId: id },
+          { milestoneId: id ,assignee:assignedBy},
           {
             headers: {
               Authorization: token,
@@ -394,7 +394,7 @@ const AddProject = () => {
       } else if (type === 'Task') {
         response = await axios.post(
           `${config.apiUrl}/deleteTask`,
-          { taskId: id },
+          { taskId: id ,assignee:assignedBy},
           {
             headers: {
               Authorization: token,
