@@ -10,6 +10,7 @@ const DetailModal = ({
   onDelete = () => {},
   onEdit = () => {},
 }) => {
+  console.log("data:", data)
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
 
   const handleDelete = () => {
@@ -68,7 +69,7 @@ const DetailModal = ({
       {/* Main detail modal */}
       <Modal
         title={`${type.charAt(0).toUpperCase() + type.slice(1)} Details`}
-        visible={visible}
+        visible={visible && data}
         onCancel={handleClose}
         footer={[
           assignedBy === (data?.assignedBy || data?.ownerId) && (  

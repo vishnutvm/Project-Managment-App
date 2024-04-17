@@ -153,15 +153,11 @@ const AddProject = () => {
         ) {
           const allProjectsData =
             response?.data?.data?.data.map((item) => ({
-              ...item.item,
+              ...item.details,
               itemType: item.itemType,
             })) || [];
 
           setAssignedToMeTreeData(allProjectsData);
-          console.log(
-            'fetchProjectAssignedToMe ~ allProjectsData:',
-            allProjectsData
-          );
         }
       }
     } catch (error) {
@@ -286,12 +282,18 @@ const AddProject = () => {
       let milestoneId = '';
 
       if (values.milestoneId) {
-        const selectedNode = findNodeById(assignedToMeTreeData, values.milestoneId);
-        milestoneId = values.milestoneId
+        const selectedNode = findNodeById(
+          assignedToMeTreeData,
+          values.milestoneId
+        );
+        milestoneId = values.milestoneId;
         projectId = selectedNode.projectId;
       } else if (values.parentTaskId) {
-        const selectedNode = findNodeById(assignedToMeTreeData, values.parentTaskId);
-        console.log("onFinishTaskCreation ~ selectedNode:", selectedNode)
+        const selectedNode = findNodeById(
+          assignedToMeTreeData,
+          values.parentTaskId
+        );
+        console.log('onFinishTaskCreation ~ selectedNode:', selectedNode);
         projectId = selectedNode.projectId;
         milestoneId = selectedNode.milestoneId;
       }
@@ -384,7 +386,7 @@ const AddProject = () => {
       } else if (type === 'Milestone') {
         response = await axios.post(
           `${config.apiUrl}/deleteMilestone`,
-          { milestoneId: id ,assignee:assignedBy},
+          { milestoneId: id, assignee: assignedBy },
           {
             headers: {
               Authorization: token,
@@ -394,7 +396,7 @@ const AddProject = () => {
       } else if (type === 'Task') {
         response = await axios.post(
           `${config.apiUrl}/deleteTask`,
-          { taskId: id ,assignee:assignedBy},
+          { taskId: id, assignee: assignedBy },
           {
             headers: {
               Authorization: token,
@@ -416,18 +418,71 @@ const AddProject = () => {
       setEditModalData(selectedNode);
       setEditModalType(type);
 
-      // Update initial values of editForm
-      editForm.setFieldsValue({
-        name: selectedNode.name,
-        description: selectedNode.description,
-        timeframe: selectedNode.timeframe,
-      });
+      // // Update initial values of editForm
 
       if (type === 'Project') {
+        if (selectedNode.timeframe && selectedNode.timeframe.length > 0) {
+          editForm.setFieldsValue({
+            name: selectedNode.name,
+            description: selectedNode.description,
+            timeframe: [
+              dayjs(selectedNode.timeframe[0].start),
+              dayjs(selectedNode.timeframe[0].end),
+            ],
+          });
+        } else {
+          editForm.setFieldsValue({
+            name: selectedNode.name,
+            description: selectedNode.description,
+          });
+        }
+
         setShowEditProjectModal(true);
       } else if (type === 'Milestone') {
+        if (selectedNode.timeframe && selectedNode.timeframe.length > 0) {
+          editForm.setFieldsValue({
+            name: selectedNode.name,
+            description: selectedNode.description,
+            assignee: selectedNode.assignee,
+            projectId: selectedNode.projectId,
+            timeframe: [
+              moment(selectedNode.timeframe[0].start),
+              moment(selectedNode.timeframe[0].end),
+            ],
+          });
+        } else {
+          editForm.setFieldsValue({
+            name: selectedNode.name,
+            description: selectedNode.description,
+            assignee: selectedNode.assignee,
+            projectId: selectedNode.projectId,
+          });
+        }
+
         setShowEditMileStoneModal(true);
       } else if (type === 'Task') {
+        if (selectedNode.timeframe && selectedNode.timeframe.length > 0) {
+          editForm.setFieldsValue({
+            name: selectedNode.name,
+            description: selectedNode.description,
+            assignee: selectedNode.assignee,
+            projectId: selectedNode.projectId,
+            milestoneId: selectedNode.projectId,
+            timeframe: [
+              moment(selectedNode.timeframe[0].start),
+              moment(selectedNode.timeframe[0].end),
+            ],
+          });
+        } else {
+          editForm.setFieldsValue({
+            name: selectedNode.name,
+            description: selectedNode.description,
+            assignee: selectedNode.assignee,
+            projectId: selectedNode.projectId,
+            milestoneId: selectedNode.projectId,
+          });
+        }
+
         selectedNode.projectId && setSelectedProject(selectedNode.projectId);
 
         selectedNode.milestoneId &&
@@ -461,13 +516,13 @@ const AddProject = () => {
     const selectedNode2 = findNodeById(assignedToMeTreeData, id);
     if (selectedNode) {
       setShowDetailModal(selectedNode);
-    } else if(selectedNode2) {
+    } else if (selectedNode2) {
       setShowDetailModal(selectedNode2);
     }
   };
 
   const onDetailsModalCancel = () => {
-    setShowDetailModal(null);
+    setShowDetailModal(false);
   };
 
   const handleCancelEditProject = () => {
@@ -641,10 +696,6 @@ const AddProject = () => {
             style={{
               maxWidth: 700,
             }}
-            initialValues={{
-              name: editModalData?.name || '',
-              description: editModalData?.description || '',
-            }}
             onFinish={onFinishEdit}
             onFinishFailed={onFinishFailed}
             autoComplete="off"
@@ -666,18 +717,15 @@ const AddProject = () => {
             >
               <Input />
             </Form.Item>
-            {/* <Form.Item
+            <Form.Item
               label="Timeframe"
               name="timeframe"
               rules={[
                 { required: true, message: 'Please Select a Time Frame!' },
               ]}
             >
-              <RangePicker
-              // value={selectedTimeframe}
-              // onChange={setSelectedTimeframe}
-              />
-            </Form.Item> */}
+              <RangePicker />
+            </Form.Item>
 
             <Form.Item
               wrapperCol={{
@@ -715,12 +763,6 @@ const AddProject = () => {
             }}
             style={{
               maxWidth: 700,
-            }}
-            initialValues={{
-              name: editModalData?.name || '',
-              description: editModalData?.description || '',
-              assignee: editModalData?.assignee || '',
-              projectId: editModalData?.projectId || '',
             }}
             onFinish={onFinishEdit}
             onFinishFailed={onFinishFailed}
@@ -767,6 +809,16 @@ const AddProject = () => {
             </Form.Item>
 
             <Form.Item
+              label="Timeframe"
+              name="timeframe"
+              rules={[
+                { required: true, message: 'Please Select a Time Frame!' },
+              ]}
+            >
+              <RangePicker />
+            </Form.Item>
+
+            <Form.Item
               wrapperCol={{
                 offset: 8,
                 span: 16,
@@ -802,14 +854,6 @@ const AddProject = () => {
             }}
             style={{
               maxWidth: 700,
-            }}
-            initialValues={{
-              name: editModalData?.name || '',
-              description: editModalData?.description || '',
-              assignee: editModalData?.assignee || '',
-              projectId: editModalData?.projectId || '',
-              milestoneId: editModalData?.milestoneId || '',
-              // parentTaskId: editModalData?.parentTaskId || '',
             }}
             onFinish={onFinishEdit}
             onFinishFailed={onFinishFailed}
@@ -898,7 +942,15 @@ const AddProject = () => {
                 ))}
               </Select>
             </Form.Item>
-
+            <Form.Item
+              label="Timeframe"
+              name="timeframe"
+              rules={[
+                { required: true, message: 'Please Select a Time Frame!' },
+              ]}
+            >
+              <RangePicker />
+            </Form.Item>
             <Form.Item
               wrapperCol={{
                 offset: 8,
@@ -1281,7 +1333,7 @@ const AddProject = () => {
       </Modal>
 
       <DetailModal
-      assignedBy={assignedBy}
+        assignedBy={assignedBy}
         visible={showDetailModal}
         data={showDetailModal}
         onCancel={onDetailsModalCancel}
